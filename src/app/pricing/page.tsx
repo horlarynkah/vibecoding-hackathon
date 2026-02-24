@@ -3,10 +3,26 @@ import { getServerSession } from "next-auth";
 
 import { UpgradeButton } from "@/components/UpgradeButton";
 import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { getSubscriptionStatus } from "@/lib/subscription";
+
+const FREE_DEAL_LIMIT = 3;
 
 export default async function PricingPage() {
   const session = await getServerSession(authOptions);
-  const subscriptionStatus = session?.user?.subscriptionStatus ?? "FREE";
+  const userId = session?.user?.id ?? null;
+  const subscriptionStatus = userId
+    ? await getSubscriptionStatus(userId)
+    : (session?.user?.subscriptionStatus ?? "FREE");
+
+  const existingDealCount =
+    userId && subscriptionStatus === "FREE"
+      ? await prisma.deal.count({ where: { userId } })
+      : null;
+  const freeDealsLeft =
+    existingDealCount === null
+      ? null
+      : Math.max(0, FREE_DEAL_LIMIT - existingDealCount);
 
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-black dark:text-zinc-50">
@@ -49,12 +65,34 @@ export default async function PricingPage() {
               <li>No reminders</li>
               <li>No invoices</li>
             </ul>
-            <Link
-              href="/register"
-              className="mt-6 inline-flex h-11 w-full items-center justify-center rounded-full bg-zinc-900 px-5 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
-            >
-              Create account
-            </Link>
+            {userId ? (
+              <div className="mt-6 space-y-2">
+                {subscriptionStatus === "PRO" ? (
+                  <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                    You’re on PRO — unlimited deals.
+                  </p>
+                ) : (
+                  <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                    {freeDealsLeft === null
+                      ? `Up to ${FREE_DEAL_LIMIT} free deals.`
+                      : `${freeDealsLeft} of ${FREE_DEAL_LIMIT} free deals left.`}
+                  </p>
+                )}
+                <Link
+                  href="/dashboard"
+                  className="inline-flex h-11 w-full items-center justify-center rounded-full bg-zinc-900 px-5 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
+                >
+                  Go to dashboard
+                </Link>
+              </div>
+            ) : (
+              <Link
+                href="/register"
+                className="mt-6 inline-flex h-11 w-full items-center justify-center rounded-full bg-zinc-900 px-5 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
+              >
+                Create account
+              </Link>
+            )}
           </div>
 
           <div className="rounded-3xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950">
