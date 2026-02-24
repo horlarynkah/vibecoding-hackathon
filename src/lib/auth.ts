@@ -5,8 +5,6 @@ import { Resend } from "resend";
 
 import { prisma } from "@/lib/prisma";
 
-const AUTH_DEBUG = process.env.AUTH_DEBUG === "1";
-
 function requireEnv(name: string): string {
   const value = process.env[name];
   if (!value) throw new Error(`Missing env var: ${name}`);
@@ -44,34 +42,6 @@ export const authOptions: NextAuthOptions = {
         const from = requireEnv("EMAIL_FROM");
         const resend = new Resend(requireEnv("RESEND_API_KEY"));
 
-        if (AUTH_DEBUG) {
-          try {
-            const u = new URL(url);
-            const identifierDomain =
-              typeof identifier === "string" && identifier.includes("@")
-                ? identifier.split("@").pop() ?? null
-                : null;
-
-            const data = {
-              urlOrigin: u.origin,
-              urlPathname: u.pathname,
-              urlHasTokenParam: u.searchParams.has("token"),
-              urlHasEmailParam: u.searchParams.has("email"),
-              identifierDomain,
-              nextAuthUrlPresent: Boolean(process.env.NEXTAUTH_URL),
-              publicUrlPresent: Boolean(process.env.NEXT_PUBLIC_URL),
-            };
-
-            // #region agent log
-            const payload = {sessionId:'e7dd5c',runId:'pre-fix',hypothesisId:'H_callback_url_mismatch',location:'src/lib/auth.ts:sendVerificationRequest',message:'Sending email verification link (redacted)',data,timestamp:Date.now()};
-            fetch('http://127.0.0.1:7632/ingest/06d69de6-7191-402a-a979-7f081457ccf1',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'e7dd5c'},body:JSON.stringify(payload)}).catch(()=>{});
-            console.log("[auth-debug]", JSON.stringify(payload));
-            // #endregion agent log
-          } catch {
-            // no-op
-          }
-        }
-
         await resend.emails.send({
           from,
           to: identifier,
@@ -89,14 +59,6 @@ export const authOptions: NextAuthOptions = {
             </div>
           `,
         });
-
-        if (AUTH_DEBUG) {
-          // #region agent log
-          const payload = {sessionId:'e7dd5c',runId:'pre-fix',hypothesisId:'H_email_send_ok',location:'src/lib/auth.ts:sendVerificationRequest',message:'Resend email sent (no recipient logged)',data:{ok:true},timestamp:Date.now()};
-          fetch('http://127.0.0.1:7632/ingest/06d69de6-7191-402a-a979-7f081457ccf1',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'e7dd5c'},body:JSON.stringify(payload)}).catch(()=>{});
-          console.log("[auth-debug]", JSON.stringify(payload));
-          // #endregion agent log
-        }
       },
     }),
   ],
@@ -115,22 +77,6 @@ export const authOptions: NextAuthOptions = {
           subscriptionStatus ?? "FREE";
       }
 
-      if (AUTH_DEBUG) {
-        const data = {
-          tokenSubPresent: typeof token.sub === "string",
-          tokenHasSubscriptionStatus: Object.prototype.hasOwnProperty.call(
-            token,
-            "subscriptionStatus"
-          ),
-          userPresent: Boolean(user),
-        };
-        // #region agent log
-        const payload = {sessionId:'e7dd5c',runId:'pre-fix',hypothesisId:'H_jwt_token_present',location:'src/lib/auth.ts:callbacks.jwt',message:'NextAuth jwt() callback executed',data,timestamp:Date.now()};
-        fetch('http://127.0.0.1:7632/ingest/06d69de6-7191-402a-a979-7f081457ccf1',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'e7dd5c'},body:JSON.stringify(payload)}).catch(()=>{});
-        console.log("[auth-debug]", JSON.stringify(payload));
-        // #endregion agent log
-      }
-
       return token;
     },
     async session({ session, token, user }) {
@@ -147,19 +93,6 @@ export const authOptions: NextAuthOptions = {
             ?.subscriptionStatus ??
           "FREE";
         session.user.subscriptionStatus = subscriptionStatus;
-      }
-
-      if (AUTH_DEBUG) {
-        const data = {
-          sessionUserPresent: Boolean(session.user),
-          userIdPresent: Boolean(session.user?.id),
-          subscriptionStatus: session.user?.subscriptionStatus ?? null,
-        };
-        // #region agent log
-        const payload = {sessionId:'e7dd5c',runId:'pre-fix',hypothesisId:'H_session_callback',location:'src/lib/auth.ts:callbacks.session',message:'NextAuth session() callback executed',data,timestamp:Date.now()};
-        fetch('http://127.0.0.1:7632/ingest/06d69de6-7191-402a-a979-7f081457ccf1',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'e7dd5c'},body:JSON.stringify(payload)}).catch(()=>{});
-        console.log("[auth-debug]", JSON.stringify(payload));
-        // #endregion agent log
       }
 
       return session;

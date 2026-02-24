@@ -18,9 +18,6 @@ export function AuthEmailForm({
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
-  const AUTH_DEBUG =
-    typeof window !== "undefined" &&
-    new URL(window.location.href).searchParams.get("authDebug") === "1";
 
   return (
     <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
@@ -42,20 +39,6 @@ export function AuthEmailForm({
               callbackUrl: "/dashboard",
               redirect: false,
             });
-
-            if (AUTH_DEBUG) {
-              const emailDomain = email.includes("@") ? email.split("@").pop() : null;
-              const data = {
-                ok: result?.ok ?? null,
-                status: result?.status ?? null,
-                error: result?.error ?? null,
-                urlPath: result?.url ? new URL(result.url, window.location.origin).pathname : null,
-                emailDomain,
-              };
-              // #region agent log
-              fetch('http://127.0.0.1:7632/ingest/06d69de6-7191-402a-a979-7f081457ccf1',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'e7dd5c'},body:JSON.stringify({sessionId:'e7dd5c',runId:'pre-fix',hypothesisId:'H_client_signin_request',location:'src/components/AuthEmailForm.tsx:onSubmit',message:'Client signIn("email") result',data,timestamp:Date.now()})}).catch(()=>{});
-              // #endregion agent log
-            }
 
             if (result?.error) {
               setError("Could not send sign-in link.");
