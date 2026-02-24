@@ -17,6 +17,20 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: "/login",
     verifyRequest: "/verify-request",
+    error: "/login",
+  },
+  logger: {
+    error(code, metadata) {
+      console.error("[nextauth:error]", code, metadata);
+    },
+    warn(code) {
+      console.warn("[nextauth:warn]", code);
+    },
+    debug(code, metadata) {
+      if (process.env.AUTH_DEBUG === "1") {
+        console.debug("[nextauth:debug]", code, metadata);
+      }
+    },
   },
   providers: [
     EmailProvider({

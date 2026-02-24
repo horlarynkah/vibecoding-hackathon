@@ -2,9 +2,15 @@ import NextAuth from "next-auth";
 
 import { authOptions } from "@/lib/auth";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 const handler = NextAuth(authOptions);
 
+const AUTH_DEBUG = process.env.AUTH_DEBUG === "1";
+
 function logAuthRequest(req: Request) {
+  if (!AUTH_DEBUG) return;
   try {
     const url = new URL(req.url);
     const header = (name: string) => req.headers.get(name);
@@ -54,14 +60,6 @@ function logAuthRequest(req: Request) {
 
     // Vercel captures stdout/stderr
     console.log("[auth-debug]", JSON.stringify(payload));
-
-    // #region agent log
-    fetch("http://127.0.0.1:7632/ingest/06d69de6-7191-402a-a979-7f081457ccf1", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "37512e" },
-      body: JSON.stringify(payload),
-    }).catch(() => {});
-    // #endregion agent log
   } catch {
     // no-op
   }
@@ -69,11 +67,21 @@ function logAuthRequest(req: Request) {
 
 export async function GET(req: Request) {
   logAuthRequest(req);
-  return handler(req);
+  try {
+    return await handler(req);
+  } catch (err) {
+    console.error("[auth-error] GET /api/auth/[...nextauth]", err);
+    throw err;
+  }
 }
 
 export async function POST(req: Request) {
   logAuthRequest(req);
-  return handler(req);
+  try {
+    return await handler(req);
+  } catch (err) {
+    console.error("[auth-error] POST /api/auth/[...nextauth]", err);
+    throw err;
+  }
 }
 

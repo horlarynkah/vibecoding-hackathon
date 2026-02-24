@@ -2,6 +2,7 @@
 
 import { signIn } from "next-auth/react";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export function AuthEmailForm({
   title,
@@ -12,9 +13,11 @@ export function AuthEmailForm({
   subtitle: string;
   actionLabel: string;
 }) {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [sent, setSent] = useState(false);
 
   return (
     <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
@@ -28,13 +31,20 @@ export function AuthEmailForm({
         onSubmit={async (e) => {
           e.preventDefault();
           setError(null);
+          setSent(false);
           setLoading(true);
           try {
             const result = await signIn("email", {
               email,
               callbackUrl: "/dashboard",
+              redirect: false,
             });
-            if (result?.error) setError("Could not send sign-in link.");
+            if (result?.error) {
+              setError("Could not send sign-in link.");
+              return;
+            }
+            setSent(true);
+            if (result?.url) router.push(result.url);
           } catch {
             setError("Could not send sign-in link.");
           } finally {
@@ -57,6 +67,10 @@ export function AuthEmailForm({
 
         {error ? (
           <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+        ) : sent ? (
+          <p className="text-sm text-emerald-700 dark:text-emerald-400">
+            Check your email for a secure sign-in link.
+          </p>
         ) : null}
 
         <button
