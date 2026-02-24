@@ -1,4 +1,5 @@
 import NextAuth from "next-auth";
+import type { NextRequest } from "next/server";
 
 import { authOptions } from "@/lib/auth";
 
@@ -9,12 +10,16 @@ const handler = NextAuth(authOptions);
 
 const AUTH_DEBUG = process.env.AUTH_DEBUG === "1";
 
-function logAuthRequest(req: Request) {
+type RouteContext = { params: Promise<{ nextauth: string[] }> };
+
+async function logAuthRequest(req: Request, ctx?: RouteContext) {
   if (!AUTH_DEBUG) return;
   try {
     const url = new URL(req.url);
     const header = (name: string) => req.headers.get(name);
     const cookieHeader = header("cookie");
+
+    const nextauthParam = ctx ? (await ctx.params).nextauth : null;
 
     const rawNextAuthUrl = process.env.NEXTAUTH_URL ?? null;
     const nextAuthUrl = rawNextAuthUrl?.trim() ?? null;
@@ -30,6 +35,7 @@ function logAuthRequest(req: Request) {
       data: {
         method: req.method,
         pathname: url.pathname,
+        nextauthParam,
         hasErrorParam: url.searchParams.has("error"),
         errorParam: url.searchParams.get("error"),
         hasCallbackUrlParam: url.searchParams.has("callbackUrl"),
@@ -65,20 +71,29 @@ function logAuthRequest(req: Request) {
   }
 }
 
-export async function GET(req: Request) {
-  logAuthRequest(req);
+export async function GET(req: NextRequest, ctx: RouteContext) {
+  void logAuthRequest(req, ctx);
   try {
-    return await handler(req);
+    const params = await ctx.params;
+    // Forward resolved params so NextAuth can reconstruct `req.query.nextauth`.
+    return await (handler as unknown as (r: NextRequest, c: { params: { nextauth: string[] } }) => Promise<Response>)(
+      req,
+      { params }
+    );
   } catch (err) {
     console.error("[auth-error] GET /api/auth/[...nextauth]", err);
     throw err;
   }
 }
 
-export async function POST(req: Request) {
-  logAuthRequest(req);
+export async function POST(req: NextRequest, ctx: RouteContext) {
+  void logAuthRequest(req, ctx);
   try {
-    return await handler(req);
+    const params = await ctx.params;
+    return await (handler as unknown as (r: NextRequest, c: { params: { nextauth: string[] } }) => Promise<Response>)(
+      req,
+      { params }
+    );
   } catch (err) {
     console.error("[auth-error] POST /api/auth/[...nextauth]", err);
     throw err;
