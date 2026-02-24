@@ -68,13 +68,21 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async jwt({ token, user }) {
-      // On initial sign-in, `user` is present; afterwards it's undefined.
-      if (user) {
-        const subscriptionStatus = (
-          user as unknown as { subscriptionStatus?: string }
-        ).subscriptionStatus;
+      const userId =
+        typeof user?.id === "string"
+          ? user.id
+          : typeof token?.sub === "string"
+            ? token.sub
+            : null;
+
+      if (userId) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { subscriptionStatus: true },
+        });
+
         (token as unknown as { subscriptionStatus?: string }).subscriptionStatus =
-          subscriptionStatus ?? "FREE";
+          dbUser?.subscriptionStatus === "PRO" ? "PRO" : "FREE";
       }
 
       return token;

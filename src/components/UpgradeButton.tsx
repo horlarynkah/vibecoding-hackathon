@@ -21,6 +21,7 @@ export function UpgradeButton() {
             const data = (await res.json().catch(() => null)) as
               | { url?: string; error?: string }
               | null;
+
             if (!res.ok) {
               setError(data?.error || "Could not start checkout.");
               return;
@@ -30,7 +31,7 @@ export function UpgradeButton() {
               return;
             }
             window.location.href = data.url;
-          } catch {
+          } catch (e: unknown) {
             setError("Could not start checkout.");
           } finally {
             setLoading(false);

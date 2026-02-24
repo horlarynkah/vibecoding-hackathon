@@ -12,7 +12,6 @@ export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) redirect("/login");
 
-  const subscriptionStatus = session.user.subscriptionStatus ?? "FREE";
   const now = new Date();
   const monthStart = new Date(
     Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)
@@ -21,7 +20,7 @@ export default async function DashboardPage() {
     Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)
   );
 
-  const [deals, paidAgg, pendingAgg, paidThisMonthAgg, activeCount] =
+  const [deals, paidAgg, pendingAgg, paidThisMonthAgg, activeCount, userSub] =
     await prisma.$transaction([
       prisma.deal.findMany({
         where: { userId: session.user.id },
@@ -52,7 +51,13 @@ export default async function DashboardPage() {
       prisma.deal.count({
         where: { userId: session.user.id, paymentStatus: { not: "PAID" } },
       }),
+      prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { subscriptionStatus: true },
+      }),
     ]);
+
+  const subscriptionStatus = userSub?.subscriptionStatus ?? "FREE";
 
   const paidTotal = paidAgg._sum.value ?? 0;
   const pendingTotal = pendingAgg._sum.value ?? 0;
