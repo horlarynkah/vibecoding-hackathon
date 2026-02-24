@@ -1,12 +1,30 @@
 import Link from "next/link";
+import { getServerSession } from "next-auth";
 
-export default function Home() {
+import { SignOutButton } from "@/components/SignOutButton";
+import { authOptions } from "@/lib/auth";
+import { getSubscriptionStatus } from "@/lib/subscription";
+
+export default async function Home() {
+  const session = await getServerSession(authOptions);
+  const userId = session?.user?.id ?? null;
+  const subscriptionStatus = userId
+    ? await getSubscriptionStatus(userId)
+    : "FREE";
+
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-black dark:text-zinc-50">
       <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-5">
-        <Link href="/" className="text-sm font-semibold tracking-tight">
-          Creator Deal Tracker
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link href="/" className="text-sm font-semibold tracking-tight">
+            Creator Deal Tracker
+          </Link>
+          {userId ? (
+            <span className="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-zinc-700 ring-1 ring-zinc-200 dark:bg-zinc-950 dark:text-zinc-300 dark:ring-zinc-800">
+              {subscriptionStatus}
+            </span>
+          ) : null}
+        </div>
         <nav className="flex items-center gap-2">
           <Link
             href="/pricing"
@@ -14,12 +32,24 @@ export default function Home() {
           >
             Pricing
           </Link>
-          <Link
-            href="/login"
-            className="rounded-full bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
-          >
-            Sign in
-          </Link>
+          {userId ? (
+            <>
+              <Link
+                href="/dashboard"
+                className="rounded-full bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
+              >
+                Dashboard
+              </Link>
+              <SignOutButton />
+            </>
+          ) : (
+            <Link
+              href="/login"
+              className="rounded-full bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
+            >
+              Sign in
+            </Link>
+          )}
         </nav>
       </header>
 
@@ -38,18 +68,43 @@ export default function Home() {
             </p>
 
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-              <Link
-                href="/register"
-                className="inline-flex h-11 items-center justify-center rounded-full bg-zinc-900 px-5 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
-              >
-                Create account
-              </Link>
-              <Link
-                href="/pricing"
-                className="inline-flex h-11 items-center justify-center rounded-full border border-zinc-200 bg-white px-5 text-sm font-medium text-zinc-900 hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50 dark:hover:bg-zinc-900"
-              >
-                View pricing
-              </Link>
+              {userId ? (
+                <>
+                  <Link
+                    href="/dashboard"
+                    className="inline-flex h-11 items-center justify-center rounded-full bg-zinc-900 px-5 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
+                  >
+                    Go to dashboard
+                  </Link>
+                  {subscriptionStatus === "PRO" ? (
+                    <span className="inline-flex h-11 items-center justify-center rounded-full border border-zinc-200 bg-white px-5 text-sm font-medium text-zinc-900 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50">
+                      You’re on PRO
+                    </span>
+                  ) : (
+                    <Link
+                      href="/pricing"
+                      className="inline-flex h-11 items-center justify-center rounded-full border border-zinc-200 bg-white px-5 text-sm font-medium text-zinc-900 hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50 dark:hover:bg-zinc-900"
+                    >
+                      Upgrade to PRO
+                    </Link>
+                  )}
+                </>
+              ) : (
+                <>
+                  <Link
+                    href="/register"
+                    className="inline-flex h-11 items-center justify-center rounded-full bg-zinc-900 px-5 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
+                  >
+                    Create account
+                  </Link>
+                  <Link
+                    href="/pricing"
+                    className="inline-flex h-11 items-center justify-center rounded-full border border-zinc-200 bg-white px-5 text-sm font-medium text-zinc-900 hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50 dark:hover:bg-zinc-900"
+                  >
+                    View pricing
+                  </Link>
+                </>
+              )}
             </div>
 
             <div className="mt-8 grid grid-cols-2 gap-4 text-sm text-zinc-600 dark:text-zinc-400">
