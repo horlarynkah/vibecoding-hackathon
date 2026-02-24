@@ -165,7 +165,7 @@ export default async function DashboardPage() {
             </div>
           ) : null}
 
-          {deals.map((deal) => (
+          {deals.map((deal: any) => (
             <div
               key={deal.id}
               className="rounded-3xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950"
