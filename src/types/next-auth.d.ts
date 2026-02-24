@@ -1,10 +1,10 @@
+import type { DefaultSession } from "next-auth";
 import "next-auth";
 
 declare module "next-auth" {
   interface Session {
-    user?: {
+    user: DefaultSession["user"] & {
       id: string;
-      email?: string | null;
       subscriptionStatus?: string;
     };
   }

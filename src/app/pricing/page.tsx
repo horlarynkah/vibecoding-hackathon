@@ -1,6 +1,13 @@
 import Link from "next/link";
+import { getServerSession } from "next-auth";
 
-export default function PricingPage() {
+import { UpgradeButton } from "@/components/UpgradeButton";
+import { authOptions } from "@/lib/auth";
+
+export default async function PricingPage() {
+  const session = await getServerSession(authOptions);
+  const subscriptionStatus = session?.user?.subscriptionStatus ?? "FREE";
+
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-black dark:text-zinc-50">
       <header className="mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-5">
@@ -8,12 +15,21 @@ export default function PricingPage() {
           Creator Deal Tracker
         </Link>
         <nav className="flex items-center gap-2">
-          <Link
-            href="/login"
-            className="rounded-full bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
-          >
-            Sign in
-          </Link>
+          {session?.user?.id ? (
+            <Link
+              href="/dashboard"
+              className="rounded-full bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
+            >
+              Dashboard
+            </Link>
+          ) : (
+            <Link
+              href="/login"
+              className="rounded-full bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
+            >
+              Sign in
+            </Link>
+          )}
         </nav>
       </header>
 
@@ -51,9 +67,19 @@ export default function PricingPage() {
               <li>Email reminders</li>
               <li>PDF invoices</li>
             </ul>
-            <p className="mt-6 text-xs text-zinc-500">
-              Upgrade via Stripe after you sign in.
-            </p>
+            {session?.user?.id ? (
+              subscriptionStatus === "PRO" ? (
+                <p className="mt-6 text-xs text-zinc-500">
+                  You’re already on PRO.
+                </p>
+              ) : (
+                <UpgradeButton />
+              )
+            ) : (
+              <p className="mt-6 text-xs text-zinc-500">
+                Upgrade via Stripe after you sign in.
+              </p>
+            )}
           </div>
         </div>
       </main>

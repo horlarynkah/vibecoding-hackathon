@@ -5,8 +5,6 @@ import { Resend } from "resend";
 
 import { prisma } from "@/lib/prisma";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 function requireEnv(name: string): string {
   const value = process.env[name];
   if (!value) throw new Error(`Missing env var: ${name}`);
@@ -22,12 +20,13 @@ export const authOptions: NextAuthOptions = {
   },
   providers: [
     EmailProvider({
-      from: requireEnv("EMAIL_FROM"),
+      from: process.env.EMAIL_FROM ?? "Creator Deal Tracker <no-reply@example.com>",
       // NextAuth requires `server`, but we use Resend API via `sendVerificationRequest`.
-      server: {} as any,
+      server: "smtp://localhost:25",
       async sendVerificationRequest({ identifier, url }) {
         const appName = "Creator Deal Tracker";
         const from = requireEnv("EMAIL_FROM");
+        const resend = new Resend(requireEnv("RESEND_API_KEY"));
 
         await resend.emails.send({
           from,
@@ -56,8 +55,10 @@ export const authOptions: NextAuthOptions = {
     async session({ session, user }) {
       if (session.user) {
         session.user.id = user.id;
-        // @ts-expect-error - added via module augmentation
-        session.user.subscriptionStatus = user.subscriptionStatus;
+        const subscriptionStatus = (
+          user as unknown as { subscriptionStatus?: string }
+        ).subscriptionStatus;
+        session.user.subscriptionStatus = subscriptionStatus ?? "FREE";
       }
       return session;
     },
