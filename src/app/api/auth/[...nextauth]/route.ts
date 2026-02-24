@@ -69,13 +69,11 @@ function logAuthRequest(req: Request) {
 
 export async function GET(req: Request) {
   logAuthRequest(req);
-  // @ts-expect-error NextAuth handler typing mismatch in App Router
   return handler(req);
 }
 
 export async function POST(req: Request) {
   logAuthRequest(req);
-  // @ts-expect-error NextAuth handler typing mismatch in App Router
   return handler(req);
 }
 
