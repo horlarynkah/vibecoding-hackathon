@@ -97,8 +97,6 @@ export async function POST() {
 
     return NextResponse.json({ url: checkoutSession.url });
   } catch (e: unknown) {
-    const stripeError = e as Partial<Stripe.StripeError> & { statusCode?: number };
-
     const message =
       e instanceof Error && e.message ? e.message : "Could not start checkout.";
     return NextResponse.json({ error: message }, { status: 500 });
